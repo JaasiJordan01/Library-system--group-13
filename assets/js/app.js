@@ -6,3 +6,20 @@ document.addEventListener('submit', function (event) {
         event.preventDefault();
     }
 });
+
+document.addEventListener('click', function (event) {
+    var toggle = event.target.closest('[data-toggle-password]');
+    if (!toggle) {
+        return;
+    }
+
+    var input = document.getElementById(toggle.getAttribute('data-toggle-password'));
+    if (!input) {
+        return;
+    }
+
+    var visible = input.type === 'password';
+    input.type = visible ? 'text' : 'password';
+    toggle.textContent = visible ? 'Hide' : 'Show';
+    toggle.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+});

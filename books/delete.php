@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/auth_check.php';
+require_roles(['admin', 'librarian']);
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 

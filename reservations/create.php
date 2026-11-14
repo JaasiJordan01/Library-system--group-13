@@ -4,14 +4,20 @@ require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 $errors = [];
-$memberId = trim($_POST['member_id'] ?? '');
-$bookId = trim($_POST['book_id'] ?? '');
+$isStudent = ($_SESSION['role'] ?? '') === 'student';
+$memberId = $isStudent
+    ? (string)($_SESSION['member_id'] ?? '')
+    : trim($_POST['member_id'] ?? '');
+$bookId = trim($_POST['book_id'] ?? $_GET['book_id'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!$isStudent) {
+        $memberId = trim($_POST['member_id'] ?? '');
+    }
     if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
         $errors[] = 'Your session expired. Please submit the form again.';
-    } elseif (!ctype_digit($memberId) || !ctype_digit($bookId)) {
-        $errors[] = 'Select an active member and a book.';
+    } elseif ((!$isStudent && !ctype_digit($memberId)) || !ctype_digit($bookId)) {
+        $errors[] = $isStudent ? 'Select a book.' : 'Select an active member and a book.';
     } else {
         try {
             $pdo->beginTransaction();
@@ -83,22 +89,31 @@ require '../includes/navbar.php';
             <ul class="error-list"><?php foreach ($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul>
         </div>
     <?php endif; ?>
-    <?php if (!$members || !$books): ?>
-        <p class="alert alert-warning">Reservations require an active member and a book with no available copies.</p>
+    <?php if ((!$isStudent && !$members) || !$books): ?>
+        <p class="alert alert-warning">
+            <?= $isStudent
+                ? 'There are no currently unavailable books to reserve.'
+                : 'Reservations require an active member and a book with no available copies.' ?>
+        </p>
     <?php else: ?>
         <form class="card form-grid" method="post">
             <?= csrf_field() ?>
-            <div class="field">
-                <label for="member_id">Member</label>
-                <select id="member_id" name="member_id" required>
-                    <option value="">Select a member</option>
-                    <?php foreach ($members as $member): ?>
-                        <option value="<?= e($member['member_id']) ?>"<?= $memberId == $member['member_id'] ? ' selected' : '' ?>>
-                            <?= e($member['full_name']) ?> (<?= e($member['member_number']) ?>)
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <?php if ($isStudent): ?>
+                <input type="hidden" name="member_id" value="<?= e($memberId) ?>">
+                <p class="field-full">Reserving as <strong><?= e($_SESSION['full_name']) ?></strong></p>
+            <?php else: ?>
+                <div class="field">
+                    <label for="member_id">Member</label>
+                    <select id="member_id" name="member_id" required>
+                        <option value="">Select a member</option>
+                        <?php foreach ($members as $member): ?>
+                            <option value="<?= e($member['member_id']) ?>"<?= $memberId == $member['member_id'] ? ' selected' : '' ?>>
+                                <?= e($member['full_name']) ?> (<?= e($member['member_number']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
             <div class="field">
                 <label for="book_id">Unavailable book</label>
                 <select id="book_id" name="book_id" required>

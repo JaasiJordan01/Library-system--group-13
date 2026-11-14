@@ -1,9 +1,11 @@
 <?php
 require_once '../includes/auth_check.php';
+require_roles(['admin', 'librarian']);
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 $errors = [];
+$studentPassword = '';
 $member = [
     'member_number' => '',
     'full_name' => '',
@@ -13,6 +15,7 @@ $member = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $studentPassword = $_POST['student_password'] ?? '';
     foreach ($member as $field => $default) {
         $member[$field] = trim($_POST[$field] ?? $default);
     }
@@ -35,21 +38,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($member['status'], ['active', 'suspended'], true)) {
         $errors[] = 'Choose a valid member status.';
     }
+    if ($studentPassword !== '' && (strlen($studentPassword) < 8 || strlen($studentPassword) > 72)) {
+        $errors[] = 'A student sign-in password must be between 8 and 72 bytes.';
+    }
 
     if (!$errors) {
         try {
             $stmt = $pdo->prepare(
-                'INSERT INTO members (member_number, full_name, email, phone, status)
-                 VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO members
+                    (member_number, full_name, email, password_hash, phone, status)
+                 VALUES (?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $member['member_number'],
                 $member['full_name'],
                 $member['email'],
+                $studentPassword !== '' ? password_hash($studentPassword, PASSWORD_DEFAULT) : null,
                 $member['phone'] !== '' ? $member['phone'] : null,
                 $member['status'],
             ]);
-            set_flash('success', 'Member added.');
+            set_flash('success', $studentPassword !== ''
+                ? 'Member added with student sign-in enabled.'
+                : 'Member added. Student sign-in can be enabled later by setting a password.');
             header('Location: index.php');
             exit;
         } catch (PDOException $exception) {
@@ -97,6 +107,12 @@ require '../includes/navbar.php';
                 <option value="active"<?= $member['status'] === 'active' ? ' selected' : '' ?>>Active</option>
                 <option value="suspended"<?= $member['status'] === 'suspended' ? ' selected' : '' ?>>Suspended</option>
             </select>
+        </div>
+        <div class="field">
+            <label for="student_password">Student sign-in password (optional)</label>
+            <input id="student_password" name="student_password" type="password"
+                   autocomplete="new-password" minlength="8" maxlength="72">
+            <small>Leave blank if this member will not sign in to the portal.</small>
         </div>
         <div class="field-full form-actions">
             <button class="button" type="submit">Save member</button>

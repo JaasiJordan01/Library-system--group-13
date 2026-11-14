@@ -3,60 +3,58 @@ require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-$stmt = $pdo->query(
-    'SELECT books.book_id, books.isbn, books.title, books.cover_isbn, authors.name AS author_name
-     FROM books
-     INNER JOIN authors ON authors.author_id = books.author_id
-     ORDER BY books.title'
-);
+$search = trim($_GET['q'] ?? '');
+$sql = 'SELECT books.book_id, books.isbn, books.title, books.cover_isbn,
+               books.available_copies, books.total_copies,
+               authors.name AS author_name
+        FROM books
+        INNER JOIN authors ON authors.author_id = books.author_id';
+$params = [];
+
+if ($search !== '') {
+    $sql .= ' WHERE books.title LIKE ? OR books.isbn LIKE ? OR authors.name LIKE ?';
+    $pattern = '%' . $search . '%';
+    $params = [$pattern, $pattern, $pattern];
+}
+
+$sql .= ' ORDER BY books.title';
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $books = $stmt->fetchAll();
+$isStudent = ($_SESSION['role'] ?? '') === 'student';
+$pageTitle = $isStudent ? 'Browse books' : 'Books';
+$extraStylesheet = '/library-system/assets/css/books-3d.css?v=20261114b';
+require '../includes/header.php';
+require '../includes/navbar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Books | Library System</title>
-    <link rel="stylesheet" href="../assets/css/style.css?v=20261114">
-    <link rel="stylesheet" href="../assets/css/books-3d.css?v=20261114">
-    <script src="../assets/js/app.js" defer></script>
-</head>
-<body>
-<header class="app-header">
-    <a class="brand" href="../dashboard/index.php">
-        <span class="brand-mark" aria-hidden="true">LS</span>
-        <span class="brand-copy">
-            <strong>Library System</strong>
-            <span>Knowledge for everyone</span>
-        </span>
-    </a>
-</header>
-<nav class="site-nav" aria-label="Main navigation">
-    <a href="../dashboard/index.php">Dashboard</a>
-    <a href="index.php" aria-current="page">Books</a>
-    <a href="../authors/index.php">Authors</a>
-    <a href="../categories/index.php">Categories</a>
-    <a href="../members/index.php">Members</a>
-    <a href="../loans/index.php">Loans</a>
-    <a href="../reservations/index.php">Reservations</a>
-    <a href="../fines/index.php">Fines</a>
-    <form class="nav-logout" action="../auth/logout.php" method="post">
-        <?= csrf_field() ?>
-        <button class="button button-secondary" type="submit">Sign out</button>
-    </form>
-</nav>
-<main class="container">
+<main class="container books-main">
     <?php show_flash(); ?>
     <header class="page-heading">
         <div>
-            <h1>Books</h1>
-            <p>Discover the collection and manage book details.</p>
+            <h1><?= $isStudent ? 'Explore the collection' : 'Books' ?></h1>
+            <p><?= $isStudent
+                ? 'Search the library and see what is ready to borrow.'
+                : 'Browse the collection and manage book details.' ?></p>
         </div>
-        <a class="button" href="create.php">Add a book</a>
+        <?php if (!$isStudent): ?>
+            <a class="button button-accent" href="create.php">Add a book</a>
+        <?php endif; ?>
     </header>
 
+    <form class="catalog-search" method="get" role="search">
+        <label class="sr-only" for="book-search">Search books</label>
+        <input id="book-search" name="q" type="search" value="<?= e($search) ?>"
+               placeholder="Search title, author, or ISBN">
+        <button class="button" type="submit">Search</button>
+        <?php if ($search !== ''): ?>
+            <a class="button button-secondary" href="index.php">Clear</a>
+        <?php endif; ?>
+    </form>
+
     <?php if (!$books): ?>
-        <p class="empty-state">No books have been added to the library yet.</p>
+        <p class="card empty-state">
+            <?= $search !== '' ? 'No books matched your search.' : 'No books have been added to the library yet.' ?>
+        </p>
     <?php else: ?>
         <section class="book-grid" aria-label="Library book collection">
             <?php foreach ($books as $book): ?>
@@ -80,16 +78,26 @@ $books = $stmt->fetchAll();
                         <span class="cover-unavailable-label" aria-hidden="true">Cover unavailable</span>
                     </div>
                     <div class="book-details">
-                        <strong><?= e($book['title']) ?></strong><br>
-                        <span><?= e($book['author_name']) ?></span>
+                        <strong><?= e($book['title']) ?></strong>
+                        <span class="book-author"><?= e($book['author_name']) ?></span>
+                        <span class="book-availability<?= (int)$book['available_copies'] > 0 ? ' is-available' : ' is-unavailable' ?>">
+                            <?= (int)$book['available_copies'] > 0
+                                ? e($book['available_copies']) . ' of ' . e($book['total_copies']) . ' available'
+                                : 'Currently unavailable' ?>
+                        </span>
                         <div class="actions book-actions">
-                            <a class="button button-secondary" href="edit.php?id=<?= e($book['book_id']) ?>">Edit</a>
-                            <form class="inline-form" method="post" action="delete.php"
-                                  data-confirm="Delete this book?">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="book_id" value="<?= e($book['book_id']) ?>">
-                                <button class="button button-danger" type="submit">Delete</button>
-                            </form>
+                            <?php if ($isStudent && (int)$book['available_copies'] === 0): ?>
+                                <a class="button button-accent"
+                                   href="../reservations/create.php?book_id=<?= e($book['book_id']) ?>">Reserve a copy</a>
+                            <?php elseif (!$isStudent): ?>
+                                <a class="button button-secondary" href="edit.php?id=<?= e($book['book_id']) ?>">Edit</a>
+                                <form class="inline-form" method="post" action="delete.php"
+                                      data-confirm="Delete this book?">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="book_id" value="<?= e($book['book_id']) ?>">
+                                    <button class="button button-danger" type="submit">Delete</button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </article>
@@ -97,5 +105,4 @@ $books = $stmt->fetchAll();
         </section>
     <?php endif; ?>
 </main>
-</body>
-</html>
+<?php require '../includes/footer.php'; ?>

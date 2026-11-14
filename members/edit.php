@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/auth_check.php';
+require_roles(['admin', 'librarian']);
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
@@ -23,7 +24,11 @@ if (!$member) {
 }
 
 $errors = [];
+$studentPassword = '';
+$disableStudentLogin = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $studentPassword = $_POST['student_password'] ?? '';
+    $disableStudentLogin = isset($_POST['disable_student_login']);
     foreach (['member_number', 'full_name', 'email', 'phone', 'status'] as $field) {
         $member[$field] = trim($_POST[$field] ?? '');
     }
@@ -45,12 +50,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($member['status'], ['active', 'suspended'], true)) {
         $errors[] = 'Choose a valid member status.';
     }
+    if ($studentPassword !== '' && (strlen($studentPassword) < 8 || strlen($studentPassword) > 72)) {
+        $errors[] = 'A student sign-in password must be between 8 and 72 bytes.';
+    }
 
     if (!$errors) {
         try {
+            $passwordHash = $studentPassword !== ''
+                ? password_hash($studentPassword, PASSWORD_DEFAULT)
+                : ($disableStudentLogin ? null : $member['password_hash']);
             $stmt = $pdo->prepare(
                 'UPDATE members
-                 SET member_number = ?, full_name = ?, email = ?, phone = ?, status = ?
+                 SET member_number = ?, full_name = ?, email = ?, phone = ?, status = ?,
+                     password_hash = ?
                  WHERE member_id = ?'
             );
             $stmt->execute([
@@ -59,9 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $member['email'],
                 $member['phone'] !== '' ? $member['phone'] : null,
                 $member['status'],
+                $passwordHash,
                 $memberId,
             ]);
-            set_flash('success', 'Member updated.');
+            set_flash('success', $studentPassword !== ''
+                ? 'Member updated and student sign-in password changed.'
+                : ($disableStudentLogin ? 'Member updated and student sign-in disabled.' : 'Member updated.'));
             header('Location: index.php');
             exit;
         } catch (PDOException $exception) {
@@ -110,6 +125,19 @@ require '../includes/navbar.php';
                 <option value="active"<?= $member['status'] === 'active' ? ' selected' : '' ?>>Active</option>
                 <option value="suspended"<?= $member['status'] === 'suspended' ? ' selected' : '' ?>>Suspended</option>
             </select>
+        </div>
+        <div class="field">
+            <label for="student_password">Set a new student password (optional)</label>
+            <input id="student_password" name="student_password" type="password"
+                   autocomplete="new-password" minlength="8" maxlength="72">
+            <small>Current access: <?= $member['password_hash'] ? 'enabled' : 'not set' ?>. Leave blank to keep it unchanged.</small>
+        </div>
+        <div class="field field-full">
+            <label class="checkbox-field">
+                <input type="checkbox" name="disable_student_login" value="1"
+                       <?= $disableStudentLogin ? 'checked' : '' ?>>
+                Disable this member's student sign-in
+            </label>
         </div>
         <div class="field-full form-actions">
             <button class="button" type="submit">Update member</button>

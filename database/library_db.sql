@@ -51,6 +51,7 @@ CREATE TABLE members (
     member_number VARCHAR(20) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NULL,
     phone VARCHAR(20),
     status ENUM('active','suspended') DEFAULT 'active',
     date_joined DATE NOT NULL DEFAULT (CURRENT_DATE)

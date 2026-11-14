@@ -1,10 +1,12 @@
 <?php
 require_once '../includes/auth_check.php';
+require_roles(['admin', 'librarian']);
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 $members = $pdo->query(
-    'SELECT member_id, member_number, full_name, email, phone, status, date_joined
+    'SELECT member_id, member_number, full_name, email, phone, status, date_joined,
+            password_hash
      FROM members
      ORDER BY full_name'
 )->fetchAll();
@@ -24,7 +26,7 @@ require '../includes/navbar.php';
     <?php else: ?>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Number</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Number</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Portal access</th><th>Joined</th><th>Actions</th></tr></thead>
                 <tbody>
                 <?php foreach ($members as $member): ?>
                     <tr>
@@ -33,6 +35,7 @@ require '../includes/navbar.php';
                         <td><?= e($member['email']) ?></td>
                         <td><?= e($member['phone'] ?: '—') ?></td>
                         <td><?= e(ucfirst($member['status'])) ?></td>
+                        <td><?= $member['password_hash'] ? 'Student enabled' : 'Not set' ?></td>
                         <td><?= e($member['date_joined']) ?></td>
                         <td>
                             <div class="actions">

@@ -30,6 +30,19 @@ function text_length($value) {
     return $matched === false ? strlen((string)$value) : $matched;
 }
 
+function role_label($role) {
+    if ($role === 'admin') {
+        return 'Administrator';
+    }
+    if ($role === 'librarian') {
+        return 'Librarian';
+    }
+    if ($role === 'student') {
+        return 'Student member';
+    }
+    return 'Library user';
+}
+
 function csrf_token() {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();

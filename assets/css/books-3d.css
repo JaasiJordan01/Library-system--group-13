@@ -9,16 +9,17 @@
     min-width: 0;
     padding: 1rem;
     text-align: center;
-    background: linear-gradient(160deg, #fff, #f8fbfa);
-    border: 1px solid #e1e9e9;
+    background: linear-gradient(160deg, #1a2747, #141f3b);
+    border: 1px solid #29385d;
     border-radius: 1rem;
-    box-shadow: 0 10px 24px rgb(23 47 64 / 7%);
-    transition: transform 180ms ease, box-shadow 180ms ease;
+    box-shadow: 0 10px 24px rgb(3 9 25 / 22%);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .book-container:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 30px rgb(23 47 64 / 12%);
+    border-color: #3a5594;
+    box-shadow: 0 16px 30px rgb(3 9 25 / 32%);
 }
 
 .volume {
@@ -30,7 +31,7 @@
     transform: rotateY(-28deg);
     transition: transform 0.8s ease;
     border-radius: 0 4px 4px 0;
-    background: #e7efec;
+    background: #1b2849;
 }
 
 .volume:hover {
@@ -57,7 +58,7 @@
 .cover-unavailable-label {
     display: none;
     padding-top: 7rem;
-    color: #647789;
+    color: #a3b0ce;
     font-size: 0.85rem;
 }
 
@@ -83,7 +84,7 @@
     width: 30px;
     height: 254px;
     transform: translateX(165px) rotateY(90deg);
-    background: linear-gradient(90deg, #eee 0%, #ccc 50%, #eee 100%);
+    background: linear-gradient(90deg, #34456e 0%, #7180a3 50%, #34456e 100%);
 }
 
 /* Back cover */
@@ -96,7 +97,7 @@
     transform: translateZ(-15px);
     background: linear-gradient(160deg, #1d5860, #17384c);
     border-radius: 0 4px 4px 0;
-    box-shadow: -8px 0 25px rgb(23 47 64 / 30%);
+    box-shadow: -8px 0 25px rgb(3 9 25 / 40%);
 }
 
 @media (max-width: 480px) {
