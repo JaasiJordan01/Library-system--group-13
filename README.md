@@ -43,9 +43,9 @@ appropriate verification or approval process.
 The Books page includes a Google Books search. Administrators and librarians
 can choose a local category and import a result with an ISBN; each imported
 title starts with one available copy. Its first listed author is matched or
-created in the local authors table. Students can browse Google Books results
-but cannot import them. The existing database schema is reused, and API
-requests are made server-side so the key is not sent to browsers.
+created in the local authors table. Students can browse Google Books results but cannot import them. The existing
+database schema is reused, and API requests are made server-side so the key is
+not sent to browsers.
 
 Google requires an API key for public Books API requests. Enable the Google
 Books API in Google Cloud and create a key from the
@@ -60,3 +60,39 @@ be enabled for outbound HTTPS requests.
 
 See the [Google Books API documentation](https://developers.google.com/books/docs/v1/using)
 for API-key setup and usage details.
+
+## Reservations and student reviews
+
+Students can reserve any title, including one with copies currently available.
+Requests form a queue; librarians issue copies to the oldest active request
+first. Existing databases do not need a reservations migration.
+
+Active student members can leave one rating and review per title and update
+their review later. Existing databases must run
+`database/migrate_book_reviews.sql` once; fresh installs create the review
+table from `database/library_db.sql`.
+
+## Online ebook reader
+
+Administrators and librarians can open a book's edit page and upload an
+authorized PDF or EPUB file (up to 30 MB). Uploaded files are stored outside
+the public web directory and served only to signed-in active student members
+and staff. A "Read online" action appears in the local catalogue when a digital
+edition has been uploaded. Existing databases must run
+`database/migrate_book_ebooks.sql` once; fresh installs already include the
+required column in `database/library_db.sql`.
+
+PDFs use the browser's built-in viewer. EPUB reading uses epub.js 0.3.93 and
+JSZip 3.10.1 from jsDelivr, so the reader needs an internet connection.
+XAMPP's PHP `fileinfo` and `zip` extensions must be enabled; if ZIP is disabled,
+uncomment `extension=zip` in `php.ini` and restart Apache. The reader provides
+sign-in access control, not DRM, so only upload files the library is authorized
+to distribute.
+
+## Research and open-access libraries
+
+The navigation includes direct title searches for Open Library, Project
+Gutenberg, Google Books, and the Directory of Open Access Books. Open Library
+borrowing depends on availability; Project Gutenberg focuses on public-domain
+books, and DOAB lists open-access scholarly titles. External catalog links do
+not copy or host those books in this application.

@@ -39,6 +39,7 @@ CREATE TABLE books (
     total_copies INT NOT NULL DEFAULT 1 CHECK (total_copies >= 0),
     available_copies INT NOT NULL DEFAULT 1 CHECK (available_copies >= 0),
     cover_isbn VARCHAR(20),  -- ISBN used to fetch Open Library cover
+    digital_file_path VARCHAR(255) NULL,
     FOREIGN KEY (author_id) REFERENCES authors(author_id)
         ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(category_id)
@@ -83,6 +84,23 @@ CREATE TABLE reservations (
         ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(book_id)
         ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Book reviews from student members (one review per member and title)
+CREATE TABLE book_reviews (
+    review_id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT NOT NULL,
+    member_id INT NOT NULL,
+    rating TINYINT UNSIGNED NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    review_text VARCHAR(2000) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_book_reviews_member (book_id, member_id),
+    KEY idx_book_reviews_member_id (member_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES members(member_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- 8. Fines (bonus)

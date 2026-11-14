@@ -48,6 +48,7 @@ if ($source === 'google') {
     }
 } else {
     $sql = 'SELECT books.book_id, books.isbn, books.title, books.cover_isbn,
+                   books.digital_file_path,
                    books.available_copies, books.total_copies,
                    authors.name AS author_name
             FROM books
@@ -228,9 +229,17 @@ require '../includes/navbar.php';
                                 : 'Currently unavailable' ?>
                         </span>
                         <div class="actions book-actions">
-                            <?php if ($isStudent && (int)$book['available_copies'] === 0): ?>
+                            <a class="button button-secondary" href="view.php?id=<?= e($book['book_id']) ?>">Details &amp; reviews</a>
+                            <?php if (!empty($book['digital_file_path'])): ?>
+                                <a class="button button-accent" href="read.php?id=<?= e($book['book_id']) ?>">Read online</a>
+                            <?php elseif ($isStudent): ?>
+                                <span class="book-availability is-unavailable">Online edition not available</span>
+                            <?php endif; ?>
+                            <?php if ($isStudent): ?>
                                 <a class="button button-accent"
-                                   href="../reservations/create.php?book_id=<?= e($book['book_id']) ?>">Reserve a copy</a>
+                                   href="../reservations/create.php?book_id=<?= e($book['book_id']) ?>">
+                                    <?= (int)$book['available_copies'] > 0 ? 'Reserve a copy' : 'Join reservation queue' ?>
+                                </a>
                             <?php elseif (!$isStudent): ?>
                                 <a class="button button-secondary" href="edit.php?id=<?= e($book['book_id']) ?>">Edit</a>
                                 <form class="inline-form" method="post" action="delete.php"

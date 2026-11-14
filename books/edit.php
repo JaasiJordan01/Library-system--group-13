@@ -106,6 +106,7 @@ require '../includes/header.php';
 require '../includes/navbar.php';
 ?>
 <main class="container">
+    <?php show_flash(); ?>
     <header class="page-heading"><h1>Edit book</h1></header>
     <?php if ($errors): ?>
         <div class="alert alert-danger" role="alert">
@@ -164,5 +165,32 @@ require '../includes/navbar.php';
             <a class="button button-secondary" href="index.php">Cancel</a>
         </div>
     </form>
+
+    <section class="card ebook-management" aria-labelledby="ebook-heading">
+        <h2 id="ebook-heading">Online reading edition</h2>
+        <p>Upload an authorized PDF or EPUB (maximum 30 MB). Active student members and staff can read it online.</p>
+        <?php if (!empty($book['digital_file_path'])): ?>
+            <p>
+                Current edition: <strong><?= e(strtoupper(pathinfo($book['digital_file_path'], PATHINFO_EXTENSION))) ?></strong>
+                <a href="read.php?id=<?= e($bookId) ?>">Preview reader</a>
+            </p>
+            <form method="post" action="ebook_manage.php" data-confirm="Remove this online reading edition?">
+                <?= csrf_field() ?>
+                <input type="hidden" name="book_id" value="<?= e($bookId) ?>">
+                <input type="hidden" name="action" value="remove">
+                <button class="button button-danger" type="submit">Remove ebook</button>
+            </form>
+        <?php endif; ?>
+        <form class="ebook-upload-form" method="post" action="ebook_manage.php" enctype="multipart/form-data">
+            <?= csrf_field() ?>
+            <input type="hidden" name="book_id" value="<?= e($bookId) ?>">
+            <input type="hidden" name="action" value="upload">
+            <div class="field">
+                <label for="ebook">Choose PDF or EPUB</label>
+                <input id="ebook" name="ebook" type="file" accept=".pdf,.epub,application/pdf,application/epub+zip" required>
+            </div>
+            <button class="button button-accent" type="submit">Upload online edition</button>
+        </form>
+    </section>
 </main>
 <?php require '../includes/footer.php'; ?>

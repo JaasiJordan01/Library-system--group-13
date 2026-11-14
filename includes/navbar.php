@@ -3,10 +3,12 @@ $navRole = $_SESSION['role'] ?? 'librarian';
 $navCurrentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
 $navDashboardHref = '/library-system/dashboard/index.php';
 $navBooksHref = '/library-system/books/index.php';
+$navResearchHref = '/library-system/books/research.php';
 $navReservationsHref = '/library-system/reservations/index.php';
 $navItems = [
     ['label' => 'Dashboard', 'href' => $navDashboardHref, 'icon' => 'DB'],
     ['label' => $navRole === 'student' ? 'Browse books' : 'Books', 'href' => $navBooksHref, 'icon' => 'BK'],
+    ['label' => 'Research & open libraries', 'href' => $navResearchHref, 'icon' => 'RE'],
 ];
 
 if ($navRole === 'student') {
@@ -44,7 +46,9 @@ if ($navRole === 'student') {
             <?php foreach ($navItems as $item): ?>
                 <?php
                 $active = $navCurrentPath === $item['href']
-                    || dirname($navCurrentPath) === dirname($item['href']);
+                    || ($item['href'] !== $navResearchHref
+                        && $navCurrentPath !== $navResearchHref
+                        && dirname($navCurrentPath) === dirname($item['href']));
                 ?>
                 <a class="sidebar-link<?= $active ? ' is-active' : '' ?>"
                    href="<?= e($item['href']) ?>"<?= $active ? ' aria-current="page"' : '' ?>>

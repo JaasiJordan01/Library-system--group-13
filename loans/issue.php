@@ -5,8 +5,8 @@ require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 $errors = [];
-$memberId = trim($_POST['member_id'] ?? '');
-$bookId = trim($_POST['book_id'] ?? '');
+$memberId = is_string($_POST['member_id'] ?? null) ? trim($_POST['member_id']) : '';
+$bookId = is_string($_POST['book_id'] ?? null) ? trim($_POST['book_id']) : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
@@ -17,6 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
+            $stmt = $pdo->prepare('SELECT available_copies FROM books WHERE book_id = ? FOR UPDATE');
+            $stmt->execute([(int)$bookId]);
+            $book = $stmt->fetch();
+            if (!$book || (int)$book['available_copies'] < 1) {
+                $errors[] = 'No copies are currently available.';
+            }
+
             $stmt = $pdo->prepare('SELECT status FROM members WHERE member_id = ? FOR UPDATE');
             $stmt->execute([(int)$memberId]);
             $member = $stmt->fetch();
@@ -24,11 +31,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'Only active members can borrow books.';
             }
 
-            $stmt = $pdo->prepare('SELECT available_copies FROM books WHERE book_id = ? FOR UPDATE');
+            $stmt = $pdo->prepare(
+                "SELECT reservation_id, member_id FROM reservations
+                 WHERE book_id = ? AND status = 'pending'
+                 ORDER BY reserved_at, reservation_id
+                 LIMIT 1 FOR UPDATE"
+            );
             $stmt->execute([(int)$bookId]);
-            $book = $stmt->fetch();
-            if (!$book || (int)$book['available_copies'] < 1) {
-                $errors[] = 'No copies are currently available.';
+            $firstReservation = $stmt->fetch();
+            if ($firstReservation && (int)$firstReservation['member_id'] !== (int)$memberId) {
+                $errors[] = 'Fulfill the oldest pending reservation before issuing this book to another member.';
             }
 
             if (!$errors) {
@@ -58,8 +70,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($stmt->rowCount() !== 1) {
                     throw new RuntimeException('Book availability changed during checkout.');
                 }
+                if ($firstReservation) {
+                    $stmt = $pdo->prepare(
+                        "UPDATE reservations SET status = 'fulfilled'
+                         WHERE reservation_id = ? AND status = 'pending'"
+                    );
+                    $stmt->execute([(int)$firstReservation['reservation_id']]);
+                    if ($stmt->rowCount() !== 1) {
+                        throw new RuntimeException('Reservation status changed during checkout.');
+                    }
+                }
                 $pdo->commit();
-                set_flash('success', 'Book issued successfully. It is due in 14 days.');
+                set_flash('success', $firstReservation
+                    ? 'Book issued and reservation fulfilled. It is due in 14 days.'
+                    : 'Book issued successfully. It is due in 14 days.');
                 header('Location: index.php');
                 exit;
             }

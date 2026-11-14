@@ -7,12 +7,14 @@ $errors = [];
 $isStudent = ($_SESSION['role'] ?? '') === 'student';
 $memberId = $isStudent
     ? (string)($_SESSION['member_id'] ?? '')
-    : trim($_POST['member_id'] ?? '');
-$bookId = trim($_POST['book_id'] ?? $_GET['book_id'] ?? '');
+    : (is_string($_POST['member_id'] ?? null) ? trim($_POST['member_id']) : '');
+$bookId = is_string($_POST['book_id'] ?? $_GET['book_id'] ?? null)
+    ? trim($_POST['book_id'] ?? $_GET['book_id'])
+    : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$isStudent) {
-        $memberId = trim($_POST['member_id'] ?? '');
+        $memberId = is_string($_POST['member_id'] ?? null) ? trim($_POST['member_id']) : '';
     }
     if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
         $errors[] = 'Your session expired. Please submit the form again.';
@@ -21,20 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo->beginTransaction();
+            $stmt = $pdo->prepare('SELECT book_id FROM books WHERE book_id = ? FOR UPDATE');
+            $stmt->execute([(int)$bookId]);
+            $book = $stmt->fetch();
+
             $stmt = $pdo->prepare('SELECT status FROM members WHERE member_id = ? FOR UPDATE');
             $stmt->execute([(int)$memberId]);
             $member = $stmt->fetch();
 
-            $stmt = $pdo->prepare('SELECT available_copies FROM books WHERE book_id = ? FOR UPDATE');
-            $stmt->execute([(int)$bookId]);
-            $book = $stmt->fetch();
-
-            if (!$member || $member['status'] !== 'active') {
-                $errors[] = 'Reservations require an active member.';
-            } elseif (!$book) {
+            if (!$book) {
                 $errors[] = 'The selected book does not exist.';
-            } elseif ((int)$book['available_copies'] > 0) {
-                $errors[] = 'Copies are available; issue the book instead of reserving it.';
+            } elseif (!$member || $member['status'] !== 'active') {
+                $errors[] = 'Reservations require an active member.';
             }
 
             if (!$errors) {
@@ -50,12 +50,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$errors) {
                 $stmt = $pdo->prepare(
+                    "SELECT COUNT(*) FROM loans
+                     WHERE member_id = ? AND book_id = ?
+                       AND status IN ('borrowed', 'overdue')"
+                );
+                $stmt->execute([(int)$memberId, (int)$bookId]);
+                if ((int)$stmt->fetchColumn() > 0) {
+                    $errors[] = 'You already have this book on loan.';
+                }
+            }
+
+            if (!$errors) {
+                $stmt = $pdo->prepare(
                     "INSERT INTO reservations (member_id, book_id, status)
                      VALUES (?, ?, 'pending')"
                 );
                 $stmt->execute([(int)$memberId, (int)$bookId]);
                 $pdo->commit();
-                set_flash('success', 'Reservation created.');
+                set_flash('success', 'Your request is in the reservation queue. Staff will issue it when a copy is available.');
                 header('Location: index.php');
                 exit;
             }
@@ -75,7 +87,7 @@ $members = $pdo->query(
      WHERE status = 'active' ORDER BY full_name"
 )->fetchAll();
 $books = $pdo->query(
-    'SELECT book_id, title FROM books WHERE available_copies = 0 ORDER BY title'
+    'SELECT book_id, title, available_copies FROM books ORDER BY title'
 )->fetchAll();
 
 $pageTitle = 'New reservation';
@@ -92,8 +104,8 @@ require '../includes/navbar.php';
     <?php if ((!$isStudent && !$members) || !$books): ?>
         <p class="alert alert-warning">
             <?= $isStudent
-                ? 'There are no currently unavailable books to reserve.'
-                : 'Reservations require an active member and a book with no available copies.' ?>
+                ? 'There are no books to reserve.'
+                : 'Reservations require an active member and a book in the library.' ?>
         </p>
     <?php else: ?>
         <form class="card form-grid" method="post">
@@ -115,16 +127,20 @@ require '../includes/navbar.php';
                 </div>
             <?php endif; ?>
             <div class="field">
-                <label for="book_id">Unavailable book</label>
+                <label for="book_id">Book</label>
                 <select id="book_id" name="book_id" required>
                     <option value="">Select a book</option>
                     <?php foreach ($books as $book): ?>
-                        <option value="<?= e($book['book_id']) ?>"<?= $bookId == $book['book_id'] ? ' selected' : '' ?>><?= e($book['title']) ?></option>
+                        <option value="<?= e($book['book_id']) ?>"<?= $bookId == $book['book_id'] ? ' selected' : '' ?>>
+                            <?= e($book['title']) ?> (<?= (int)$book['available_copies'] > 0
+                                ? e($book['available_copies']) . ' available'
+                                : 'join the waitlist' ?>)
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="field-full form-actions">
-                <button class="button" type="submit">Reserve</button>
+                <button class="button" type="submit">Join reservation queue</button>
                 <a class="button button-secondary" href="index.php">Cancel</a>
             </div>
         </form>
