@@ -4,7 +4,7 @@ require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 $stmt = $pdo->query(
-    'SELECT books.isbn, books.title, books.cover_isbn, authors.name AS author_name
+    'SELECT books.book_id, books.isbn, books.title, books.cover_isbn, authors.name AS author_name
      FROM books
      INNER JOIN authors ON authors.author_id = books.author_id
      ORDER BY books.title'
@@ -17,7 +17,9 @@ $books = $stmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Books | Library System</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/books-3d.css">
+    <script src="../assets/js/app.js" defer></script>
     <style>
         body {
             margin: 0;
@@ -61,6 +63,10 @@ $books = $stmt->fetchAll();
         .book-details {
             margin-top: 1.25rem;
         }
+        .book-actions {
+            justify-content: center;
+            margin-top: 0.6rem;
+        }
         .empty-state {
             padding: 2rem;
             text-align: center;
@@ -75,7 +81,22 @@ $books = $stmt->fetchAll();
     </style>
 </head>
 <body>
+<nav class="site-nav" aria-label="Main navigation">
+    <a href="../dashboard/index.php">Dashboard</a>
+    <a href="index.php" aria-current="page">Books</a>
+    <a href="../authors/index.php">Authors</a>
+    <a href="../categories/index.php">Categories</a>
+    <a href="../members/index.php">Members</a>
+    <a href="../loans/index.php">Loans</a>
+    <a href="../reservations/index.php">Reservations</a>
+    <a href="../fines/index.php">Fines</a>
+    <form class="nav-logout" action="../auth/logout.php" method="post">
+        <?= csrf_field() ?>
+        <button class="button button-secondary" type="submit">Sign out</button>
+    </form>
+</nav>
 <main>
+    <?php show_flash(); ?>
     <header class="page-heading">
         <h1>Books</h1>
     </header>
@@ -107,6 +128,15 @@ $books = $stmt->fetchAll();
                     <div class="book-details">
                         <strong><?= e($book['title']) ?></strong><br>
                         <span><?= e($book['author_name']) ?></span>
+                        <div class="actions book-actions">
+                            <a class="button button-secondary" href="edit.php?id=<?= e($book['book_id']) ?>">Edit</a>
+                            <form class="inline-form" method="post" action="delete.php"
+                                  data-confirm="Delete this book?">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="book_id" value="<?= e($book['book_id']) ?>">
+                                <button class="button button-danger" type="submit">Delete</button>
+                            </form>
+                        </div>
                     </div>
                 </article>
             <?php endforeach; ?>
