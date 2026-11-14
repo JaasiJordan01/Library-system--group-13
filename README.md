@@ -54,7 +54,8 @@ you can add this user environment variable through **Edit environment
 variables for your account**, then fully restart the XAMPP Control Panel and
 Apache. Do not put the key in the repository. The Google Books search tab
 displays a configuration or quota message if the key is missing or the API
-limit is reached.
+limit is reached. PHP cURL or `allow_url_fopen` must be enabled for outbound
+HTTPS requests.
 
 See the [Google Books API documentation](https://developers.google.com/books/docs/v1/using)
 for API-key setup and usage details.

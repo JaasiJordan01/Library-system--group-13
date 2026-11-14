@@ -18,32 +18,66 @@ function google_books_api_request($resource, array $parameters = []) {
     $parameters['key'] = trim($apiKey);
     $url = 'https://www.googleapis.com/books/v1/' . $resource
         . '?' . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
-    $handle = curl_init($url);
-    if ($handle === false) {
-        throw new GoogleBooksApiException('Google Books could not be contacted.');
-    }
 
-    curl_setopt_array($handle, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_HTTPHEADER => ['Accept: application/json'],
-        CURLOPT_USERAGENT => 'LibrarySystem/1.0',
-    ]);
+    if (function_exists('curl_init')) {
+        $handle = curl_init($url);
+        if ($handle === false) {
+            throw new GoogleBooksApiException('Google Books could not be contacted.');
+        }
 
-    $response = curl_exec($handle);
-    $curlError = $response === false ? curl_error($handle) : '';
-    $status = (int)curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-    curl_close($handle);
+        curl_setopt_array($handle, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_USERAGENT => 'LibrarySystem/1.0',
+        ]);
 
-    if ($response === false) {
+        $response = curl_exec($handle);
+        $curlError = $response === false ? curl_error($handle) : '';
+        $status = (int)curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        curl_close($handle);
+
+        if ($response === false) {
+            throw new GoogleBooksApiException(
+                $curlError !== '' ? 'Google Books request failed: ' . $curlError : 'Google Books request failed.'
+            );
+        }
+    } elseif (filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 15,
+                'follow_location' => 0,
+                'max_redirects' => 0,
+                'ignore_errors' => true,
+                'header' => "Accept: application/json\r\nUser-Agent: LibrarySystem/1.0\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $response = @file_get_contents($url, false, $context);
+        if ($response === false) {
+            throw new GoogleBooksApiException('Google Books request failed. Check outbound HTTPS access.');
+        }
+
+        $status = 0;
+        foreach ($http_response_header ?? [] as $header) {
+            if (preg_match('~\AHTTP/\S+\s+([0-9]{3})~', $header, $statusMatch)) {
+                $status = (int)$statusMatch[1];
+            }
+        }
+    } else {
         throw new GoogleBooksApiException(
-            $curlError !== '' ? 'Google Books request failed: ' . $curlError : 'Google Books request failed.'
+            'Enable PHP cURL or allow_url_fopen to search Google Books.'
         );
     }
+
     if ($status === 429) {
         throw new GoogleBooksApiException('Google Books rate limit reached. Check the API key quota and try again later.');
     }

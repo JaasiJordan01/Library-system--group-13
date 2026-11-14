@@ -77,7 +77,7 @@ require '../includes/navbar.php';
         <div>
             <h1><?= $source === 'google' ? 'Search Google Books' : ($isStudent ? 'Explore the collection' : 'Books') ?></h1>
             <p><?= $source === 'google'
-                ? 'Search Google’s public book catalogue. Library staff can add selected titles to the local collection.'
+                ? "Search Google's public book catalogue. Library staff can add selected titles to the local collection."
                 : ($isStudent
                     ? 'Search the library and see what is ready to borrow.'
                     : 'Browse the collection and manage book details.') ?></p>
@@ -159,7 +159,7 @@ require '../includes/navbar.php';
                             </span>
                             <?php if ($metadata['publisher'] !== '' || $metadata['published_year'] !== null): ?>
                                 <span class="book-author">
-                                    <?= e($metadata['publisher']) ?><?= $metadata['publisher'] !== '' && $metadata['published_year'] !== null ? ' · ' : '' ?><?= e($metadata['published_year'] ?? '') ?>
+                                    <?= e($metadata['publisher']) ?><?= $metadata['publisher'] !== '' && $metadata['published_year'] !== null ? ' - ' : '' ?><?= e($metadata['published_year'] ?? '') ?>
                                 </span>
                             <?php endif; ?>
                             <?php if ($metadata['isbn'] !== null): ?>
