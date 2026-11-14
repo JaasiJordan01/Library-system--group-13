@@ -26,8 +26,14 @@ the nullable password-hash column required for member sign-in. Fresh installs
 already include this column in `database/library_db.sql`.
 
 Administrators and librarians can add or edit a member and optionally set or
-reset that member's student portal password. Students sign in with their member
-number or email and the password provided by library staff; there is no public
-self-registration. Students can browse the catalog, view only their own loans
-and reservations, and reserve unavailable books. Staff sign in with their
-existing staff username and password.
+reset that member's student portal password.
+
+The sign-in page also offers public student/member registration for
+demonstrations. New registrations receive a generated member number, are
+activated immediately, and are signed in automatically. Public registration
+cannot create librarian or administrator accounts. Students can browse the
+catalog, view only their own loans and reservations, and reserve unavailable
+books. Staff sign in with their existing staff username and password.
+
+For a production deployment, replace immediate public activation with an
+appropriate verification or approval process.

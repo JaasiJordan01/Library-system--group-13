@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sign in | Library System</title>
-    <link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114b">
+    <link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114c">
 </head>
 <body class="auth-page">
 <main class="auth-layout">
@@ -121,11 +121,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <button class="button" type="submit">Sign in <span aria-hidden="true">&rarr;</span></button>
             </form>
-            <p class="auth-note">Need a student account? Ask a librarian to enable access on your member profile.</p>
+            <p class="auth-note">New to the library? <a href="register.php">Create a student account</a>.</p>
             <p class="auth-copyright">&copy; <?= date('Y') ?> Library System</p>
         </div>
     </section>
 </main>
-<script src="/library-system/assets/js/app.js?v=20261114b" defer></script>
+<script src="/library-system/assets/js/app.js?v=20261114c" defer></script>
 </body>
 </html>

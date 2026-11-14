@@ -11,7 +11,7 @@ function require_roles($allowedRoles) {
         echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
             . '<meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Access denied</title>'
-            . '<link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114b">'
+            . '<link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114c">'
             . '</head><body class="access-denied"><main class="card">'
             . '<h1>Access denied</h1><p>Your account cannot open this page.</p>'
             . '<a class="button" href="/library-system/dashboard/index.php">Back to dashboard</a>'
