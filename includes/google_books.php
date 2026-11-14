@@ -4,9 +4,23 @@ class GoogleBooksApiException extends RuntimeException {
 
 function google_books_api_request($resource, array $parameters = []) {
     $apiKey = getenv('GOOGLE_BOOKS_API_KEY');
-    if (!is_string($apiKey) || trim($apiKey) === '') {
+    $apiKey = is_string($apiKey) ? trim($apiKey) : '';
+    $localConfigPath = __DIR__ . '/../config/google_books.local.php';
+
+    if ($apiKey === '' && is_file($localConfigPath)) {
+        $localConfig = require $localConfigPath;
+        if (!is_array($localConfig)) {
+            throw new GoogleBooksApiException('The local Google Books configuration must return an array.');
+        }
+        if (isset($localConfig['api_key']) && !is_string($localConfig['api_key'])) {
+            throw new GoogleBooksApiException('The local Google Books api_key must be a string.');
+        }
+        $apiKey = trim($localConfig['api_key'] ?? '');
+    }
+
+    if ($apiKey === '') {
         throw new GoogleBooksApiException(
-            'Google Books is not configured. Set GOOGLE_BOOKS_API_KEY in the Apache environment and restart Apache.'
+            'Google Books is not configured. Create an API key, then add it to config/google_books.local.php or set GOOGLE_BOOKS_API_KEY in the Apache environment.'
         );
     }
 

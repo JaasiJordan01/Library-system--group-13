@@ -48,14 +48,15 @@ but cannot import them. The existing database schema is reused, and API
 requests are made server-side so the key is not sent to browsers.
 
 Google requires an API key for public Books API requests. Enable the Google
-Books API in Google Cloud, create an API key, and set it as the
-`GOOGLE_BOOKS_API_KEY` environment variable available to Apache. On Windows,
-you can add this user environment variable through **Edit environment
-variables for your account**, then fully restart the XAMPP Control Panel and
-Apache. Do not put the key in the repository. The Google Books search tab
-displays a configuration or quota message if the key is missing or the API
-limit is reached. PHP cURL or `allow_url_fopen` must be enabled for outbound
-HTTPS requests.
+Books API in Google Cloud and create a key from the
+[Google Cloud Credentials page](https://console.cloud.google.com/apis/credentials).
+For XAMPP, copy `config/google_books.local.example.php` to
+`config/google_books.local.php` and enter the key in the new file. That local
+file is ignored by Git; never commit or share the key. Alternatively, set the
+`GOOGLE_BOOKS_API_KEY` environment variable available to Apache and restart
+Apache. The Google Books tab displays a configuration or quota message if the
+key is missing or the API limit is reached. PHP cURL or `allow_url_fopen` must
+be enabled for outbound HTTPS requests.
 
 See the [Google Books API documentation](https://developers.google.com/books/docs/v1/using)
 for API-key setup and usage details.
