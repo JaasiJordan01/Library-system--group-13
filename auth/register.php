@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Create a student account | Library System</title>
-    <link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114c">
+    <link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114d">
 </head>
 <body class="auth-page">
 <main class="auth-layout">
@@ -167,6 +167,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </section>
 </main>
-<script src="/library-system/assets/js/app.js?v=20261114c" defer></script>
+<script src="/library-system/assets/js/app.js?v=20261114d" defer></script>
 </body>
 </html>

@@ -530,6 +530,39 @@ textarea { min-height: 7rem; resize: vertical; }
 
 .catalog-search input { min-width: 0; }
 .catalog-search .button { flex: 0 0 auto; }
+.catalog-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #29385d;
+}
+
+.catalog-tabs a {
+    display: inline-flex;
+    min-height: 2.65rem;
+    align-items: center;
+    padding: 0.55rem 0.85rem;
+    color: #aab8d5;
+    font-size: 0.86rem;
+    font-weight: 700;
+    border-bottom: 2px solid transparent;
+}
+
+.catalog-tabs a:hover { color: #fff; }
+.catalog-tabs a.is-active { color: #fff; border-bottom-color: var(--gold); }
+.external-catalog-note { margin: 0 0 1rem; color: var(--muted); font-size: 0.84rem; }
+
+.google-import-form {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid #29385d;
+}
+
+.google-import-form label { font-size: 0.78rem; }
+.google-import-form .button { width: 100%; }
 .sr-only { position: absolute; overflow: hidden; width: 1px; height: 1px; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
 .book-details { color: #f1f4ff; }

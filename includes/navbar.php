@@ -1,30 +1,30 @@
 <?php
-$role = $_SESSION['role'] ?? 'librarian';
-$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
-$dashboard = '/library-system/dashboard/index.php';
-$books = '/library-system/books/index.php';
-$reservations = '/library-system/reservations/index.php';
+$navRole = $_SESSION['role'] ?? 'librarian';
+$navCurrentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+$navDashboardHref = '/library-system/dashboard/index.php';
+$navBooksHref = '/library-system/books/index.php';
+$navReservationsHref = '/library-system/reservations/index.php';
 $navItems = [
-    ['label' => 'Dashboard', 'href' => $dashboard, 'icon' => 'DB'],
-    ['label' => $role === 'student' ? 'Browse books' : 'Books', 'href' => $books, 'icon' => 'BK'],
+    ['label' => 'Dashboard', 'href' => $navDashboardHref, 'icon' => 'DB'],
+    ['label' => $navRole === 'student' ? 'Browse books' : 'Books', 'href' => $navBooksHref, 'icon' => 'BK'],
 ];
 
-if ($role === 'student') {
-    $navItems[] = ['label' => 'My reservations', 'href' => $reservations, 'icon' => 'RS'];
+if ($navRole === 'student') {
+    $navItems[] = ['label' => 'My reservations', 'href' => $navReservationsHref, 'icon' => 'RS'];
 } else {
-    if ($role === 'admin') {
+    if ($navRole === 'admin') {
         $navItems[] = ['label' => 'Authors', 'href' => '/library-system/authors/index.php', 'icon' => 'AU'];
         $navItems[] = ['label' => 'Categories', 'href' => '/library-system/categories/index.php', 'icon' => 'CT'];
     }
     $navItems[] = ['label' => 'Members', 'href' => '/library-system/members/index.php', 'icon' => 'MB'];
     $navItems[] = ['label' => 'Loans', 'href' => '/library-system/loans/index.php', 'icon' => 'LN'];
-    $navItems[] = ['label' => 'Reservations', 'href' => $reservations, 'icon' => 'RS'];
+    $navItems[] = ['label' => 'Reservations', 'href' => $navReservationsHref, 'icon' => 'RS'];
     $navItems[] = ['label' => 'Fines', 'href' => '/library-system/fines/index.php', 'icon' => 'FN'];
 }
 ?>
 <aside class="sidebar">
     <div class="sidebar-head">
-        <a class="brand" href="<?= e($dashboard) ?>">
+        <a class="brand" href="<?= e($navDashboardHref) ?>">
             <span class="brand-mark" aria-hidden="true">LS</span>
             <span class="brand-copy">
                 <strong>Library System</strong>
@@ -43,8 +43,8 @@ if ($role === 'student') {
         <nav class="sidebar-nav" aria-label="Main navigation">
             <?php foreach ($navItems as $item): ?>
                 <?php
-                $active = $currentPath === $item['href']
-                    || dirname($currentPath) === dirname($item['href']);
+                $active = $navCurrentPath === $item['href']
+                    || dirname($navCurrentPath) === dirname($item['href']);
                 ?>
                 <a class="sidebar-link<?= $active ? ' is-active' : '' ?>"
                    href="<?= e($item['href']) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
@@ -59,7 +59,7 @@ if ($role === 'student') {
                 <span class="account-avatar"><?= e(strtoupper(substr($_SESSION['full_name'] ?? 'L', 0, 1))) ?></span>
                 <span class="account-details">
                     <strong><?= e($_SESSION['full_name'] ?? $_SESSION['username']) ?></strong>
-                    <small><?= e(role_label($role)) ?></small>
+                    <small><?= e(role_label($navRole)) ?></small>
                 </span>
             </div>
             <form action="/library-system/auth/logout.php" method="post">
@@ -76,5 +76,5 @@ if ($role === 'student') {
             <span class="topbar-kicker">LIBRARY WORKSPACE</span>
             <strong><?= e($pageTitle) ?></strong>
         </div>
-        <span class="role-badge"><?= e(role_label($role)) ?></span>
+        <span class="role-badge"><?= e(role_label($navRole)) ?></span>
     </header>

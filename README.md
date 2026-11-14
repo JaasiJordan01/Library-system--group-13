@@ -37,3 +37,24 @@ books. Staff sign in with their existing staff username and password.
 
 For a production deployment, replace immediate public activation with an
 appropriate verification or approval process.
+
+## Google Books catalogue
+
+The Books page includes a Google Books search. Administrators and librarians
+can choose a local category and import a result with an ISBN; each imported
+title starts with one available copy. Its first listed author is matched or
+created in the local authors table. Students can browse Google Books results
+but cannot import them. The existing database schema is reused, and API
+requests are made server-side so the key is not sent to browsers.
+
+Google requires an API key for public Books API requests. Enable the Google
+Books API in Google Cloud, create an API key, and set it as the
+`GOOGLE_BOOKS_API_KEY` environment variable available to Apache. On Windows,
+you can add this user environment variable through **Edit environment
+variables for your account**, then fully restart the XAMPP Control Panel and
+Apache. Do not put the key in the repository. The Google Books search tab
+displays a configuration or quota message if the key is missing or the API
+limit is reached.
+
+See the [Google Books API documentation](https://developers.google.com/books/docs/v1/using)
+for API-key setup and usage details.

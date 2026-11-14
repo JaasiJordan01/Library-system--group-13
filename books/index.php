@@ -2,27 +2,71 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/google_books.php';
 
-$search = trim($_GET['q'] ?? '');
-$sql = 'SELECT books.book_id, books.isbn, books.title, books.cover_isbn,
-               books.available_copies, books.total_copies,
-               authors.name AS author_name
-        FROM books
-        INNER JOIN authors ON authors.author_id = books.author_id';
-$params = [];
+$source = is_string($_GET['source'] ?? null) ? $_GET['source'] : 'local';
+if (!in_array($source, ['local', 'google'], true)) {
+    $source = 'local';
+}
+$search = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+$isStudent = ($_SESSION['role'] ?? '') === 'student';
+$books = [];
+$googleItems = [];
+$googleError = '';
+$googleTotal = 0;
+$categories = [];
 
-if ($search !== '') {
-    $sql .= ' WHERE books.title LIKE ? OR books.isbn LIKE ? OR authors.name LIKE ?';
-    $pattern = '%' . $search . '%';
-    $params = [$pattern, $pattern, $pattern];
+if ($source === 'google') {
+    if ($search !== '') {
+        if (text_length($search) > 100) {
+            $googleError = 'Search terms must be no more than 100 characters.';
+        } else {
+            try {
+                $response = google_books_api_request('volumes', [
+                    'q' => $search,
+                    'maxResults' => 12,
+                    'printType' => 'books',
+                    'orderBy' => 'relevance',
+                ]);
+                $googleTotal = (int)($response['totalItems'] ?? 0);
+                $items = isset($response['items']) && is_array($response['items'])
+                    ? $response['items']
+                    : [];
+                foreach ($items as $item) {
+                    if (is_array($item)) {
+                        $googleItems[] = $item;
+                    }
+                }
+            } catch (GoogleBooksApiException $exception) {
+                $googleError = $exception->getMessage();
+            }
+        }
+    }
+
+    if (!$isStudent) {
+        $categories = $pdo->query('SELECT category_id, name FROM categories ORDER BY name')->fetchAll();
+    }
+} else {
+    $sql = 'SELECT books.book_id, books.isbn, books.title, books.cover_isbn,
+                   books.available_copies, books.total_copies,
+                   authors.name AS author_name
+            FROM books
+            INNER JOIN authors ON authors.author_id = books.author_id';
+    $params = [];
+
+    if ($search !== '') {
+        $sql .= ' WHERE books.title LIKE ? OR books.isbn LIKE ? OR authors.name LIKE ?';
+        $pattern = '%' . $search . '%';
+        $params = [$pattern, $pattern, $pattern];
+    }
+
+    $sql .= ' ORDER BY books.title';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $books = $stmt->fetchAll();
 }
 
-$sql .= ' ORDER BY books.title';
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$books = $stmt->fetchAll();
-$isStudent = ($_SESSION['role'] ?? '') === 'student';
-$pageTitle = $isStudent ? 'Browse books' : 'Books';
+$pageTitle = $source === 'google' ? 'Google Books' : ($isStudent ? 'Browse books' : 'Books');
 $extraStylesheet = '/library-system/assets/css/books-3d.css?v=20261114b';
 require '../includes/header.php';
 require '../includes/navbar.php';
@@ -31,27 +75,125 @@ require '../includes/navbar.php';
     <?php show_flash(); ?>
     <header class="page-heading">
         <div>
-            <h1><?= $isStudent ? 'Explore the collection' : 'Books' ?></h1>
-            <p><?= $isStudent
-                ? 'Search the library and see what is ready to borrow.'
-                : 'Browse the collection and manage book details.' ?></p>
+            <h1><?= $source === 'google' ? 'Search Google Books' : ($isStudent ? 'Explore the collection' : 'Books') ?></h1>
+            <p><?= $source === 'google'
+                ? 'Search Google’s public book catalogue. Library staff can add selected titles to the local collection.'
+                : ($isStudent
+                    ? 'Search the library and see what is ready to borrow.'
+                    : 'Browse the collection and manage book details.') ?></p>
         </div>
-        <?php if (!$isStudent): ?>
+        <?php if (!$isStudent && $source === 'local'): ?>
             <a class="button button-accent" href="create.php">Add a book</a>
         <?php endif; ?>
     </header>
 
+    <nav class="catalog-tabs" aria-label="Catalog source">
+        <a class="<?= $source === 'local' ? 'is-active' : '' ?>"
+           href="index.php?source=local"<?= $source === 'local' ? ' aria-current="page"' : '' ?>>
+            Library collection
+        </a>
+        <a class="<?= $source === 'google' ? 'is-active' : '' ?>"
+           href="index.php?source=google"<?= $source === 'google' ? ' aria-current="page"' : '' ?>>
+            Google Books
+        </a>
+    </nav>
+
     <form class="catalog-search" method="get" role="search">
-        <label class="sr-only" for="book-search">Search books</label>
+        <input type="hidden" name="source" value="<?= e($source) ?>">
+        <label class="sr-only" for="book-search">
+            <?= $source === 'google' ? 'Search Google Books' : 'Search library books' ?>
+        </label>
         <input id="book-search" name="q" type="search" value="<?= e($search) ?>"
-               placeholder="Search title, author, or ISBN">
+               placeholder="<?= $source === 'google' ? 'Search title, author, or ISBN' : 'Search title, author, or ISBN' ?>">
         <button class="button" type="submit">Search</button>
         <?php if ($search !== ''): ?>
-            <a class="button button-secondary" href="index.php">Clear</a>
+            <a class="button button-secondary" href="index.php?source=<?= e($source) ?>">Clear</a>
         <?php endif; ?>
     </form>
 
-    <?php if (!$books): ?>
+    <?php if ($source === 'google'): ?>
+        <?php if ($googleError !== ''): ?>
+            <div class="alert alert-warning" role="alert">
+                <?= e($googleError) ?>
+                <?php if ($search !== ''): ?>
+                    <a href="https://books.google.com/books?q=<?= e(rawurlencode($search)) ?>"
+                       target="_blank" rel="noopener noreferrer">Open this search on Google Books</a>.
+                <?php endif; ?>
+            </div>
+        <?php elseif ($search === ''): ?>
+            <p class="card empty-state">Enter a title, author, or ISBN to search Google Books.</p>
+        <?php elseif (!$googleItems): ?>
+            <p class="card empty-state">Google Books returned no matches for this search.</p>
+        <?php else: ?>
+            <p class="external-catalog-note">
+                Showing <?= e(count($googleItems)) ?> of <?= e($googleTotal) ?> Google Books results.
+                Students can browse results; only staff can add books to the library collection.
+            </p>
+            <?php if (!$isStudent && !$categories): ?>
+                <p class="alert alert-warning">Create a library category before importing books.</p>
+            <?php endif; ?>
+            <section class="book-grid" aria-label="Google Books results">
+                <?php foreach ($googleItems as $item): ?>
+                    <?php
+                    $metadata = google_books_extract_metadata($item);
+                    $canImport = preg_match('/\A[A-Za-z0-9_-]{1,128}\z/', $metadata['id']) === 1
+                        && $metadata['isbn'] !== null
+                        && $metadata['title'] !== ''
+                        && text_length($metadata['title']) <= 200
+                        && (!$metadata['authors'] || text_length($metadata['authors'][0]) <= 100);
+                    ?>
+                    <article class="book-container">
+                        <div class="volume<?= $metadata['cover_url'] === '' ? ' cover-unavailable' : '' ?>">
+                            <?php if ($metadata['cover_url'] !== ''): ?>
+                                <img src="<?= e($metadata['cover_url']) ?>"
+                                     alt="Cover of <?= e($metadata['title']) ?>"
+                                     loading="lazy"
+                                     onerror="this.onerror=null; this.parentElement.classList.add('cover-unavailable')">
+                            <?php endif; ?>
+                            <span class="cover-unavailable-label" aria-hidden="true">Cover unavailable</span>
+                        </div>
+                        <div class="book-details">
+                            <strong><?= e($metadata['title'] !== '' ? $metadata['title'] : 'Untitled book') ?></strong>
+                            <span class="book-author">
+                                <?= e($metadata['authors'] ? implode(', ', $metadata['authors']) : 'Author not listed') ?>
+                            </span>
+                            <?php if ($metadata['publisher'] !== '' || $metadata['published_year'] !== null): ?>
+                                <span class="book-author">
+                                    <?= e($metadata['publisher']) ?><?= $metadata['publisher'] !== '' && $metadata['published_year'] !== null ? ' · ' : '' ?><?= e($metadata['published_year'] ?? '') ?>
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($metadata['isbn'] !== null): ?>
+                                <span class="book-author">ISBN <?= e($metadata['isbn']) ?></span>
+                            <?php else: ?>
+                                <span class="book-availability is-unavailable">No valid ISBN for import</span>
+                            <?php endif; ?>
+                            <div class="actions book-actions">
+                                <?php if ($metadata['preview_url'] !== ''): ?>
+                                    <a class="button button-secondary" href="<?= e($metadata['preview_url']) ?>"
+                                       target="_blank" rel="noopener noreferrer">View on Google Books</a>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!$isStudent && $canImport && $categories): ?>
+                                <form class="google-import-form" method="post" action="google_import.php">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="volume_id" value="<?= e($metadata['id']) ?>">
+                                    <input type="hidden" name="q" value="<?= e($search) ?>">
+                                    <label for="category-<?= e($metadata['id']) ?>">Add to category</label>
+                                    <select id="category-<?= e($metadata['id']) ?>" name="category_id" required>
+                                        <option value="">Select a category</option>
+                                        <?php foreach ($categories as $category): ?>
+                                            <option value="<?= e($category['category_id']) ?>"><?= e($category['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button class="button button-accent" type="submit">Import to library</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </section>
+        <?php endif; ?>
+    <?php elseif (!$books): ?>
         <p class="card empty-state">
             <?= $search !== '' ? 'No books matched your search.' : 'No books have been added to the library yet.' ?>
         </p>
