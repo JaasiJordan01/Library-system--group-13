@@ -48,12 +48,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sign in | Library System</title>
-    <link rel="stylesheet" href="/library-system/assets/css/style.css">
+    <link rel="stylesheet" href="/library-system/assets/css/style.css?v=20261114">
 </head>
 <body class="auth-page">
 <main class="auth-card">
-    <h1>Library System</h1>
-    <p>Sign in to manage the library collection.</p>
+    <div class="auth-brand">
+        <span class="brand-mark" aria-hidden="true">LS</span>
+        <div>
+            <h1>Welcome back</h1>
+            <p class="auth-subtitle">Sign in to manage your library.</p>
+        </div>
+    </div>
     <?php if ($error !== ''): ?>
         <div class="alert alert-danger" role="alert"><?= e($error) ?></div>
     <?php endif; ?>

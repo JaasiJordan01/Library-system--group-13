@@ -17,70 +17,20 @@ $books = $stmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Books | Library System</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/books-3d.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20261114">
+    <link rel="stylesheet" href="../assets/css/books-3d.css?v=20261114">
     <script src="../assets/js/app.js" defer></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 2rem;
-            color: #243447;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-        }
-        main {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .page-heading {
-            margin-bottom: 2rem;
-        }
-        .page-heading h1 {
-            margin: 0;
-        }
-        .book-container {
-            height: auto;
-            min-height: 320px;
-            text-align: center;
-        }
-        .volume {
-            background: #dce3e9;
-        }
-        .volume > img {
-            display: block;
-        }
-        .volume.cover-unavailable > img {
-            display: none;
-        }
-        .cover-unavailable-label {
-            display: none;
-            padding-top: 7rem;
-            color: #526170;
-        }
-        .volume.cover-unavailable .cover-unavailable-label {
-            display: block;
-        }
-        .book-details {
-            margin-top: 1.25rem;
-        }
-        .book-actions {
-            justify-content: center;
-            margin-top: 0.6rem;
-        }
-        .empty-state {
-            padding: 2rem;
-            text-align: center;
-            background: #fff;
-            border-radius: 6px;
-        }
-        @media (max-width: 520px) {
-            body {
-                padding: 1rem;
-            }
-        }
-    </style>
 </head>
 <body>
+<header class="app-header">
+    <a class="brand" href="../dashboard/index.php">
+        <span class="brand-mark" aria-hidden="true">LS</span>
+        <span class="brand-copy">
+            <strong>Library System</strong>
+            <span>Knowledge for everyone</span>
+        </span>
+    </a>
+</header>
 <nav class="site-nav" aria-label="Main navigation">
     <a href="../dashboard/index.php">Dashboard</a>
     <a href="index.php" aria-current="page">Books</a>
@@ -95,10 +45,14 @@ $books = $stmt->fetchAll();
         <button class="button button-secondary" type="submit">Sign out</button>
     </form>
 </nav>
-<main>
+<main class="container">
     <?php show_flash(); ?>
     <header class="page-heading">
-        <h1>Books</h1>
+        <div>
+            <h1>Books</h1>
+            <p>Discover the collection and manage book details.</p>
+        </div>
+        <a class="button" href="create.php">Add a book</a>
     </header>
 
     <?php if (!$books): ?>
