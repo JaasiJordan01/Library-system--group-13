@@ -9,7 +9,7 @@
     min-width: 0;
     padding: 1rem;
     text-align: center;
-    background: linear-gradient(160deg, #1a2747, #141f3b);
+    background: linear-gradient(160deg, #243b55, #141e30);
     border: 1px solid #29385d;
     border-radius: 1rem;
     box-shadow: 0 10px 24px rgb(3 9 25 / 22%);
@@ -17,7 +17,7 @@
 }
 
 .book-container:hover {
-    transform: translateY(-4px);
+    transform: translateY(-8px);
     border-color: #3a5594;
     box-shadow: 0 16px 30px rgb(3 9 25 / 32%);
 }
